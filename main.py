@@ -1,6 +1,7 @@
 from enum import Enum
 import json
 from json import JSONDecodeError
+import html
 import os
 import random
 import requests
@@ -23,6 +24,9 @@ Code 4: Token Empty Session Token has returned all possible
 questions for the specified query. Resetting the Token is necessary.
 """
 
+def clear_console():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
 
 class Difficulty(Enum):
     easy = 1
@@ -34,20 +38,34 @@ class Question:
     question = []
 
     def create_questions(self, question_json: json = None) -> list:
-        self.question_json = question_json
-        for question in question_json:
-            self.question.append(question)
-        return self.question
+        if question_json:
+            self.question_json = question_json
+            for question in question_json:
+                self.question.append(self.transform_question(question))
+            return self.question
 
     def print_question(self, index: int) -> dict:
         print(f"{self.question[index]['question']}")
-        all_answers = self.question[index]['incorrect_answers']
-        all_answers.append(self.question[index]['correct_answer'])
-        random.shuffle(all_answers)
-        for i, answer in enumerate(all_answers):
-            print(f'{i + 1} - {answer}')
+        # all_answers = self.question[index]['incorrect_answers']
+        # all_answers.append(self.question[index]['correct_answer'])
+        # random.shuffle(all_answers)
+        for index, answer in enumerate(self.question[index]['answers']):
+            print(f'{index + 1} - {answer}')
         print()
         return self.question
+
+    def transform_question(self, question: dict) -> dict:
+        transformed_question = {}
+        transformed_question['question'] = html.unescape(question['question'])
+        all_answers = question['incorrect_answers']
+        all_answers.append(question['correct_answer'])
+        random.shuffle(all_answers)
+        transformed_question['answers'] = []
+        for index, answer in enumerate(all_answers):
+            transformed_question['answers'].append(answer)
+            if answer == question['correct_answer']:
+                transformed_question['index_correct_answer'] = index
+        return transformed_question
 
     def print_questions(self) -> None:
         for q in range(len(self.question)):
@@ -143,13 +161,10 @@ class Quiz:
 
     def choose_category(self) -> int | None:
         while True:
-            self.print_category()
             try:
-                category_number = int(
-                    input(
-                        "Please, choose the category number: "
-                    )
-                    )
+                self.print_category()
+                print("Please, choose the category number: ")
+                category_number = int(input())
                 if not self.is_category_number_correct(category_number):
                     print("Wrong category. Please, try again!")
                     input("Press any key to continue")
@@ -162,6 +177,9 @@ class Quiz:
 
 
 def main():
+    # clear screen
+    clear_console()
+    print("Hello and welcome to our online quiz consisting of 10 questions!")
     quiz = Quiz()
     category = quiz.get_category_from_file(FILENAME_CATEGORY)
     if category:
