@@ -42,28 +42,34 @@ class Question:
         if question_json:
             self.question_json = question_json
             for question in question_json:
-                self.question.append(self.transform_question(question))
+                if 'question' in question and 'correct_answer' in question \
+                        and 'incorrect_answers' in question:
+                    self.question.append(self.transform_question(question))
             return self.question
 
     def print_question(self, index: int) -> dict:
-        print(f"{self.question[index]['question']}")
-        for i, answer in enumerate(self.question[index]['answers']):
-            print(f'{i + 1} - {answer}')
-        print()
-        return self.question[index]
+        if len(self.question) > index and 'question' in self.question[index] \
+                and 'answers' in self.question[index]:
+            print(f"{self.question[index]['question']}")
+            for i, answer in enumerate(self.question[index]['answers']):
+                print(f'{i + 1} - {answer}')
+            print()
+            return self.question[index]
 
     def transform_question(self, question: dict) -> dict:
         transformed_question = {}
-        transformed_question['question'] = html.unescape(question['question'])
-        all_answers = question['incorrect_answers']
-        all_answers.append(question['correct_answer'])
-        random.shuffle(all_answers)
-        transformed_question['answers'] = []
-        for index, answer in enumerate(all_answers):
-            transformed_question['answers'].append(answer)
-            if answer == question['correct_answer']:
-                transformed_question['index_correct_answer'] = index
-        return transformed_question
+        if 'question' in question \
+                and 'correct_answer' in question and 'incorrect_answers' in question:
+            transformed_question['question'] = html.unescape(question['question'])
+            all_answers = question['incorrect_answers']
+            all_answers.append(question['correct_answer'])
+            random.shuffle(all_answers)
+            transformed_question['answers'] = []
+            for index, answer in enumerate(all_answers):
+                transformed_question['answers'].append(html.unescape(answer))
+                if answer == question['correct_answer']:
+                    transformed_question['index_correct_answer'] = index
+            return transformed_question
 
     def is_correct_answer(self, question: dict, index: int) -> bool:
         if 'index_correct_answer' in question and \
@@ -89,6 +95,8 @@ class Score:
     def point(self, point: int) -> int:
         if not isinstance(point, int):
             raise ValueError("Value point must be an integer!")
+        if point < 0:
+            raise ValueError("Value point must be positive!")
         self._point = point
         return self._point
 
@@ -152,7 +160,7 @@ class Quiz:
             category_number: int,
             ) -> bool:
         for cat in self.category:
-            if cat["id"] == category_number:
+            if "id" in cat and cat["id"] == category_number:
                 return True
         return False
 
@@ -189,7 +197,6 @@ class Quiz:
 
 
 def main():
-    # clear screen
     clear_console()
     print("Hello and welcome to our online quiz consisting of 10 questions!")
     score = Score()
@@ -214,7 +221,7 @@ def main():
                         ):
                         score.point_add(10)
                         print("Correct answer!")
-                        print(f"Your points: {score.point}")
+                        print(f"Your points: {score.point}\n")
 
                     else:
                         print("Wrong answer!")
