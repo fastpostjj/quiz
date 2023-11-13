@@ -1,6 +1,8 @@
+import json
+import os
 import pytest
 from unittest.mock import patch
-from project import Difficulty, Quiz, Question, Score, URL, URL_CATEGORY
+from project import Quiz, Question, Score
 
 
 def test_print_question_empty():
@@ -93,6 +95,12 @@ def test_score():
         score.point = -3
 
 
+def test_score_add_point():
+    score = Score()
+    score.point_add(10)
+    assert score.point == 10
+
+
 def test_choose_valid_category():
     quiz = Quiz()
     quiz.category = [
@@ -107,9 +115,6 @@ def test_choose_valid_category():
         assert chosen_category == 2
         chosen_category = quiz.choose_category()
         assert chosen_category == 5
-    # with patch('builtins.input', return_value='6'):
-    #     chosen_category = quiz.choose_category()
-    #     assert chosen_category is None
 
 
 def test_choose_difficulty_valid_input():
@@ -123,22 +128,6 @@ def test_choose_difficulty_valid_input():
     with patch('builtins.input', return_value='3'):
         chosen_difficulty = quiz.choose_difficulty()
         assert chosen_difficulty == "hard"
-
-
-    # with patch('builtins.input', return_value='dfgdf'):
-        # monkeypatch.setattr('builtins.input', lambda _: 'fddf\n2')
-            # assert chosen_difficulty == "Wrong difficutly. Please, try again!\nPress any key to continue"
-
-# def test_choose_difficulty_invalid_input():
-#     quiz = Quiz()
-#     with patch('builtins.input', side_effect=['fdgf']): #, '1', '2', '3']): #, '2', '1', '3']):
-#         with pytest.raises(ValueError):
-#             chosen_difficulty = quiz.choose_difficulty()
-#         # chosen_difficulty = quiz.choose_difficulty()
-#         # assert chosen_difficulty == "medium"
-#         with patch('builtins.input', side_effect=['1']):
-#         # quiz = Quiz()
-#             assert quiz.choose_difficulty() == 'easy'
 
 
 def test_is_category_number_correct():
@@ -166,16 +155,46 @@ def test_print_category(capsys):
         + "5 - test_name5"
 
 
-def test_category_from_file():
-    pass
+def test_get_category_from_file():
+    quiz = Quiz()
+    quiz_category = [
+        {"id": 1, "name": "test_name1"},
+        {"id": 2, "name": "test_name2"},
+        {"id": 5, "name": "test_name5"}
+        ]
+    filename = "test.json"
+    with open(filename, "w", encoding="UTF-8") as file:
+        json.dump(quiz_category, file)
+    result = quiz.get_category_from_file(filename)
+    assert result == quiz_category
+    if os.path.exists(filename):
+        os.remove(filename)
 
 
 def test_get_category_from_api():
     pass
 
 
-def test_get_questions():
-    quiz = Quiz()
+def test_get_questions_valid():
+    with patch('requests.get') as mock_get:
+        mock_json = {
+            'response_code': 0,
+            'results': [{'question': 'Question 1', 'answer': 'Answer 1'}]
+        }
+        mock_response = mock_get.return_value
+        mock_response.status_code = 200
+        mock_response.json.return_value = mock_json
+        filename = "test_question.json"
+        quiz = Quiz(filename)
+        quiz.category_number = 1
+        quiz.difficutly = 'easy'
+        questions = quiz.get_questions()
+
+        assert questions == mock_json['results']
+        mock_get.assert_called_once_with('https://opentdb.com/api.php?amount=10&category=1&difficulty=easy')
+        if os.path.exists(filename):
+            os.remove(filename)
+
 
 
 if __name__ == "__main__":

@@ -12,18 +12,6 @@ URL_CATEGORY = "https://opentdb.com/api_category.php"
 FILENAME_CATEGORY = "category.json"
 FILENAME_QUESTIONS = "questions.json"
 
-"""
-Code 0: Success Returned results successfully.
-Code 1: No Results Could not return results. The API doesn't have
-enough questions for your query. (Ex. Asking for 50 Questions in
-a Category that only has 20.)
-Code 2: Invalid Parameter Contains an invalid parameter.
-Arguements passed in aren't valid. (Ex. Amount = Five)
-Code 3: Token Not Found Session Token does not exist.
-Code 4: Token Empty Session Token has returned all possible
-questions for the specified query. Resetting the Token is necessary.
-"""
-
 
 def clear_console():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -59,8 +47,10 @@ class Question:
     def transform_question(self, question: dict) -> dict:
         transformed_question = {}
         if 'question' in question \
-                and 'correct_answer' in question and 'incorrect_answers' in question:
-            transformed_question['question'] = html.unescape(question['question'])
+                and 'correct_answer' in question \
+                and 'incorrect_answers' in question:
+            transformed_question['question'] = \
+                html.unescape(question['question'])
             all_answers = question['incorrect_answers']
             all_answers.append(question['correct_answer'])
             random.shuffle(all_answers)
@@ -118,13 +108,21 @@ class Score:
 
 
 class Quiz:
+    def __init__(
+            self,
+            filename_questions=FILENAME_QUESTIONS,
+            filename_category=FILENAME_CATEGORY
+            ):
+        self.filename_questions = filename_questions
+        self.filename_category = filename_category
+
     def get_questions(self) -> json:
         url = 'https://opentdb.com/api.php?amount=10&'\
               + f'category={self.category_number}&difficulty={self.difficutly}'
         response = requests.get(url)
         if response.status_code:
             if response.json()['response_code'] == 0:
-                with open(FILENAME_QUESTIONS, "w", encoding="UTF-8") as file:
+                with open(self.filename_questions, "w", encoding="UTF-8") as file:
                     self.questions = response.json()['results']
                     json.dump(self.questions, file)
                     return self.questions
@@ -138,7 +136,7 @@ class Quiz:
     def get_category_from_api(self):
         response = requests.get(URL_CATEGORY)
         if response.status_code:
-            with open(FILENAME_CATEGORY, "w", encoding="UTF-8") as file:
+            with open(self.filename_category, "w", encoding="UTF-8") as file:
                 json.dump(response.json()["trivia_categories"], file)
 
     def get_category_from_file(self, filename: str) -> json:
@@ -166,9 +164,9 @@ class Quiz:
 
     def choose_difficulty(self) -> int | None:
         while True:
-            difficutly = input(
-                "Please, choose difficulty: 1- Easy, 2- Medium, 3-Hard, 4-Exit: "
-                )
+            text_input = "Please, choose difficulty level: "
+            text_input += "1- Easy, 2- Medium, 3-Hard, 4-Exit: "
+            difficutly = input(text_input)
             try:
                 if int(difficutly) in [1, 2, 3]:
                     self.difficutly = Difficulty(int(difficutly)).name
@@ -201,6 +199,7 @@ def main():
     print("Hello and welcome to our online quiz consisting of 10 questions!")
     score = Score()
     score.name = input("Your name: ")
+    print(f'Hello {score.name}!')
     quiz = Quiz()
     category = quiz.get_category_from_file(FILENAME_CATEGORY)
     if category:
@@ -210,6 +209,7 @@ def main():
         question = Question()
         question.create_questions(question_json)
         for i in range(len(question.question)):
+            clear_console()
             current_question = question.print_question(i)
             while True:
                 answer = input("Your answer: ")
@@ -218,19 +218,21 @@ def main():
                     if question.is_correct_answer(
                         current_question,
                         number_answer - 1
-                        ):
+                            ):
                         score.point_add(10)
                         print("Correct answer!")
                         print(f"Your points: {score.point}\n")
+                        input("Press any key to continue")
 
                     else:
-                        print("Wrong answer!")
+                        print(f"Wrong answer! The correct answer is {current_question['answers'][int(current_question['index_correct_answer'])]}")
+                        input("Press any key to continue")
                     break
                 except ValueError:
-                    print("Please, choose an integer digit!")
+                    print("Please, choose an integer!")
                     input("Press any key to continue")
 
-        print(f"Congratulations! Your points: {score.point}")
+        print(f"Congratulations {score.name}! Your points: {score.point}")
 
     else:
         print("Something went wrong. No file with categories.")
@@ -238,4 +240,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # Quiz().get_category_from_api()
