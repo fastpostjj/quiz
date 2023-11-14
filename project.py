@@ -107,6 +107,23 @@ class Score:
         return f'{self.name}: {self.point}'
 
 
+class FileManager:
+    @staticmethod
+    def save_json_to_file(filename: str, data: dict | list) -> dict | list:
+        with open(filename, "w", encoding="UTF-8") as file:
+            json.dump(data, file)
+            return data
+
+    @staticmethod
+    def load_json_from_file(filename: str) -> dict | list:
+        try:
+            with open(filename, "r") as file:
+                data = json.load(file)
+                return data
+        except JSONDecodeError:
+            pass
+
+
 class Quiz:
     def __init__(
             self,
@@ -122,10 +139,12 @@ class Quiz:
         response = requests.get(url)
         if response.status_code:
             if response.json()['response_code'] == 0:
-                with open(self.filename_questions, "w", encoding="UTF-8") as file:
-                    self.questions = response.json()['results']
-                    json.dump(self.questions, file)
-                    return self.questions
+                self.questions = response.json()['results']
+                FileManager().save_json_to_file(
+                    self.filename_questions,
+                    self.questions
+                    )
+                return self.questions
             else:
                 print("Something went wrong. Please, try again!")
                 input("Press any key to continue")
@@ -136,18 +155,16 @@ class Quiz:
     def get_category_from_api(self):
         response = requests.get(URL_CATEGORY)
         if response.status_code:
-            with open(self.filename_category, "w", encoding="UTF-8") as file:
-                json.dump(response.json()["trivia_categories"], file)
+            if "trivia_categories" in response.json():
+                FileManager().save_json_to_file(
+                        self.filename_category,
+                        response.json()["trivia_categories"]
+                        )
 
     def get_category_from_file(self, filename: str) -> json:
         if os.path.exists(filename):
-            try:
-                with open(filename, "r") as file:
-                    category = json.load(file)
-                    self.category = category
-                    return category
-            except JSONDecodeError:
-                pass
+            self.category = FileManager().load_json_from_file(filename)
+            return self.category
 
     def print_category(self) -> None:
         for cat in self.category:
@@ -196,7 +213,7 @@ class Quiz:
 
 def main():
     clear_console()
-    print("Hello and welcome to our online quiz consisting of 10 questions!")
+    print("Hello, welcome to our online quiz consisting of 10 questions!")
     score = Score()
     score.name = input("Your name: ")
     print(f'Hello {score.name}!')
@@ -229,7 +246,7 @@ def main():
                         input("Press any key to continue")
                     break
                 except ValueError:
-                    print("Please, choose an integer!")
+                    print("Please choose an integer!")
                     input("Press any key to continue")
 
         print(f"Congratulations {score.name}! Your points: {score.point}")
