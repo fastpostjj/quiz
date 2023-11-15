@@ -195,10 +195,3 @@ def test_get_questions_valid():
         if os.path.exists(filename):
             os.remove(filename)
 
-
-
-if __name__ == "__main__":
-    test_choose_valid_category()
-    # import html
-
-    # print(html.unescape("text_&quot;answer&quot;"))

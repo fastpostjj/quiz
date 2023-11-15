@@ -1,7 +1,5 @@
 # The quiz
 
-    #### Video Demo:  <URL HERE>
-    #### Description:
 
 The program implements a quiz. It gets questions from API 'https://opentdb.com'.
 

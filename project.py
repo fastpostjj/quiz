@@ -7,7 +7,7 @@ import random
 import requests
 
 
-URL = "https://opentdb.com/api_config.php"
+URL = "https://opentdb.com/api.php"
 URL_CATEGORY = "https://opentdb.com/api_category.php"
 FILENAME_CATEGORY = "category.json"
 FILENAME_QUESTIONS = "questions.json"
@@ -134,7 +134,7 @@ class Quiz:
         self.filename_category = filename_category
 
     def get_questions(self) -> json:
-        url = 'https://opentdb.com/api.php?amount=10&'\
+        url = f'{URL}?amount=10&'\
               + f'category={self.category_number}&difficulty={self.difficutly}'
         response = requests.get(url)
         if response.status_code:
